@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squishy Clicker — Taba vs Nedooh Edition</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+            background-color: #ffe4e1; 
+            color: #ff69b4;
+            user-select: none;
+            overflow: hidden;
+            position: relative;
+            transition: background-color 0.4s ease;
+        }
+
+        /* --- SELECTION SCREEN --- */
+        #menu-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #f7f9fa;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        #menu-screen h1 {
+            font-size: 3rem;
+            color: #4a4a4a;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        .menu-options {
+            display: flex;
+            gap: 40px;
+        }
+        .menu-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 180px;
+            height: 180px;
+            border-radius: 20px;
+            border: 4px solid transparent;
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+        #taba-pick {
+            background-color: #fff0f5;
+            color: #ff69b4;
+            border-color: #ffb6c1;
+        }
+        #taba-pick:hover { transform: scale(1.05); box-shadow: 0 15px 25px rgba(255, 105, 180, 0.2); }
+        
+        #nedooh-pick {
+            background-color: #e0f7fa;
+            color: #00acc1;
+            border-color: #80deea;
+        }
+        #nedooh-pick:hover { transform: scale(1.05); box-shadow: 0 15px 25px rgba(0, 172, 193, 0.2); }
+
+        .preview-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+        }
+
+        /* --- MAIN GAME INTERFACE --- */
+        #game-interface {
+            display: none; 
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #score-container {
+            font-size: 3.5rem;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0px #fff;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        #cps-display {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .squishy-container {
+            position: relative;
+            cursor: pointer;
+            z-index: 1;
+            height: 220px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- SQUISHY GRAPHICS --- */
+        .squishy-graphic {
+            position: relative;
+            transition: transform 0.05s ease-in-out, background-color 0.3s;
+        }
+
+        /* Taba Cat Paw Shape */
+        .shape-taba {
+            width: 200px;
+            height: 180px;
+            background: #fff0f5; 
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            box-shadow: 0 15px 0px #ffb6c1, 0 20px 25px rgba(0,0,0,0.1);
+        }
+        .shape-taba::before {
+            content: '';
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90px;
+            height: 75px;
+            background: #ffb6c1; 
+            border-radius: 50% 50% 45% 45%;
+        }
+
+        /* Nedooh Shape (Glossy, translucent slime ball) */
+        .shape-nedooh {
+            width: 170px;
+            height: 170px;
+            background: radial-gradient(circle at 30% 30%, #a7ffeb, #00e5ff); 
+            border-radius: 50%;
+            box-shadow: inset -10px -10px 20px rgba(0,184,212,0.5), 0 15px 0px #00b8d4, 0 20px 25px rgba(0,0,0,0.15);
+        }
+
+        /* Glasses layer */
+        .glasses {
+            display: none;
+            position: absolute;
+            top: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 40px;
+            border-top: 5px solid #333;
+            z-index: 5;
+        }
+        .glass-lens {
+            display: inline-block;
+            width: 55px;
+            height: 40px;
+            border: 5px solid #333;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            box-sizing: border-box;
+        }
+        .lens-bridge {
+            display: inline-block;
+            width: 20px;
+            height: 5px;
+            background: #333;
+            vertical-align: top;
+            margin-top: 15px;
+        }
+
+        /* Toe layout for Taba style */
+        .toe {
+            position: absolute;
+            background: #ffb6c1;
+            border-radius: 50%;
+            width: 35px;
+            height: 45px;
+        }
+        .toe-1 { top: 25px; left: 25px; transform: rotate(-20deg); }
+        .toe-2 { top: 10px; left: 62px; }
+        .toe-3 { top: 10px; right: 62px; }
+        .toe-4 { top: 25px; right: 25px; transform: rotate(20deg); }
+
+        /* Real Flattening Squish Animation */
+        .shape-taba:active, .taba-active {
+            transform: scale(0.9) translateY(10px);
+            box-shadow: 0 5px 0px #ffb6c1, 0 10px 15px rgba(0,0,0,0.1);
+        }
+        .shape-nedooh:active, .nedooh-active {
+            transform: scaleY(0.65) scaleX(1.3) translateY(40px); 
+            box-shadow: 0 4px 0px #00b8d4, 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .floating-text {
+            position: absolute;
+            font-size: 1.8rem;
+            font-weight: bold;
+            animation: floatUp 0.6s ease-out forwards;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-120px) scale(1.2); }
+        }
+
+        /* --- SHOP & PANELS --- */
+        #shop-btn {
+            position: absolute;
+            bottom: 30px;
+            padding: 12px 30px;
+            font-size: 1.5rem;
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: 0.1s;
+            z-index: 5;
+        }
+        #shop-btn:active { transform: translateY(3px); }
+
+        .popup-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 360px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+
+        #shop-items-container {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        #shop-items-container::-webkit-scrollbar { width: 8px; }
+        #shop-items-container::-webkit-scrollbar-thumb { border-radius: 4px; }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            border: 2px solid;
+        }
+
+        .item-info div { font-weight: bold; font-size: 1.05rem; }
+        .item-info span { font-size: 0.8rem; color: #777; display: block; margin-top: 2px; }
+
+        .btn-style {
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            min-width: 80px;
+        }
+        .btn-style:disabled {
+            background: #ccc !important;
+            border-color: #ccc !important;
+            cursor: not-allowed;
+        }
+
+        /* --- ADMIN PANEL --- */
+        #admin-panel { border: 4px solid #4b0082; }
+        #admin-panel h2 { color: #4b0082; }
+        .admin-input-group { margin-bottom: 15px; }
+        .admin-input-group label { display: block; font-weight: bold; color: #4b0082; margin-bottom: 5px; }
+        .admin-input-group input { width: 90%; padding: 8px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; }
+
+        /* --- SECRET EASTER EGG --- */
+        #secret-easter-egg {
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            font-size: 6px;
+            cursor: pointer;
+            user-select: none;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="menu-screen">
+        <h1>Pick Your Squishy!</h1>
+        <div class="menu-options">
+            <div class="menu-btn" id="taba-pick" onclick="startGame('taba')">
+                <div class="preview-circle" style="background: #ffb6c1;"></div>
+                Taba Squishy
+            </div>
+            <div class="menu-btn" id="nedooh-pick" onclick="startGame('nedooh')">
+                <div class="preview-circle" style="background: #00e5ff;"></div>
+                Nedooh Ball
+            </div>
+        </div>
+    </div>
+
+    <div id="game-interface">
+        <div id="score-container">000000</div>
+        <div id="cps-display">Auto-Squish: 0 clicks/sec</div>
+
+        <div class="squishy-container" id="squishyButton">
+            <div id="squishy-element" class="squishy-graphic">
+                <div class="glasses" id="taba-glasses">
+                    <div class="glass-lens"></div>
+                    <div class="lens-bridge"></div>
+                    <div class="glass-lens"></div>
+                </div>
+                <div id="toe-layer"></div>
+            </div>
+        </div>
+
+        <button id="shop-btn" onclick="toggleShop()">🛍️ Shop</button>
+    </div>
+
+    <div id="shop-panel" class="popup-panel">
+        <div class="panel-header">
+            <h2 id="shop-title">Super Shop</h2>
+            <button class="close-btn" id="shop-close-x" onclick="toggleShop()">✖</button>
+        </div>
+        <div id="shop-items-container"></div>
+    </div>
+
+    <div id="admin-panel" class="popup-panel">
+        <div class="panel-header">
+            <h2>🛠️ Admin Panel</h2>
+            <button class="close-btn" onclick="toggleAdmin()">✖</button>
+        </div>
+        <div class="admin-input-group">
+            <label>Set Total Points:</label>
+            <input type="number" id="admin-score-input" placeholder="e.g. 50000">
+        </div>
+        <div class="admin-input-group">
+            <label>Set Clicks Per Second (CPS):</label>
+            <input type="number" id="admin-cps-input" placeholder="e.g. 10">
+        </div>
+        <button class="btn-style" style="background: #4b0082; width: 100%;" onclick="applyCheats()">Apply Cheats</button>
+    </div>
+
+    <div id="secret-easter-egg" onclick="triggerEasterEgg()">i need glasses</div>
+
+    <script>
+        let score = 0;
+        let clicksPerSecond = 0;
+        let gameMode = 'taba';
+
+        const themes = {
+            taba: {
+                bg: "#ffe4e1", primary: "#ff69b4", secondary: "#db7093", elementClass: "shape-taba",
+                activeClass: "taba-active", shopBg: "#fff0f5", shopBorder: "#ffb6c1", shadow: "#c71585",
+                eggColor: "#ffdcd8",
+                items: [
+                    { id: 1, name: "🐾 Tiny Mini Paw", cps: 2, cost: 50 },
+                    { id: 2, name: "🥟 Jelly Dumpling", cps: 15, cost: 300 },
+                    { id: 3, name: "🐹 Mochi Capybara", cps: 75, cost: 1500 },
+                    { id: 4, name: "🍑 Giant Peach Bun", cps: 350, cost: 7000 },
+                    { id: 5, name: "✨ God-Tier Taba", cps: 1500, cost: 30000 },
+                    { id: 6, name: "🌈 Galaxy Glitter Paw", cps: 8000, cost: 150000 },
+                    { id: 7, name: "🥤 Boba Milk Tea Taba", cps: 45000, cost: 800000 },
+                    { id: 8, name: "🦖 Dino Squishy Taba", cps: 250000, cost: 4500000 },
+                    { id: 9, name: "⭐ Fluffy Cloud Taba", cps: 1500000, cost: 25000000 },
+                    { id: 10, name: "🕳️ Black Hole Squishy", cps: 10000000, cost: 150000000 }
+                ]
+            },
+            nedooh: {
+                bg: "#e0f7fa", primary: "#00acc1", secondary: "#00838f", elementClass: "shape-nedooh",
+                activeClass: "nedooh-active", shopBg: "#f0fdfa", shopBorder: "#80deea", shadow: "#006064",
+                eggColor: "#d3f3f5",
+                items: [
+                    { id: 1, name: "🧪 Teenie Nedooh Gel", cps: 2, cost: 50 },
+                    { id: 2, name: "🍬 Clear Sugar Nedoo", cps: 15, cost: 300 },
+                    { id: 3, name: "🔮 Shimmer Jelly Nedoo", cps: 75, cost: 1500 },
+                    { id: 4, name: "🍩 Glazed Donut Squishy", cps: 350, cost: 7000 },
+                    { id: 5, name: "🥚 Giant Nedoo Crunch Egg", cps: 1500, cost: 30000 },
+                    { id: 6, name: "🪐 Neon Marble Swirl", cps: 8000, cost: 150000 },
+                    { id: 7, name: "🍍 Tropical Slime Drop", cps: 45000, cost: 800000 },
+                    { id: 8, name: "👾 Monster Crunch Core", cps: 250000, cost: 4500000 },
+                    { id: 9, name: "💎 Liquid Crystal Nedooh", cps: 1500000, cost: 25000000 },
+                    { id: 10, name: "🌋 Nuclear Magma Nedoo", cps: 10000000, cost: 150000000 }
+                ]
+            }
+        };
+
+        let shopItems = [];
+
+        const scoreDisplay = document.getElementById('score-container');
+        const cpsDisplay = document.getElementById('cps-display');
+        const squishyEl = document.getElementById('squishy-element');
+        const container = document.getElementById('squishyButton');
+        const shopPanel = document.getElementById('shop-panel');
+        const adminPanel = document.getElementById('admin-panel');
+        const itemsContainer = document.getElementById('shop-items-container');
+        const tabaGlasses = document.getElementById('taba-glasses');
+        const toeLayer = document.getElementById('toe-layer');
+
+        function startGame(mode) {
+            gameMode = mode;
+            const currentTheme = themes[gameMode];
+            shopItems = currentTheme.items.map(item => ({...item, bought: false}));
+
+            document.body.style.backgroundColor = currentTheme.bg;
+            document.body.style.color = currentTheme.primary;
+            scoreDisplay.style.textShadow = `2px 2px 0px #fff`;
+            cpsDisplay.style.color = currentTheme.secondary;
+
+            document.getElementById('shop-btn').style.backgroundColor = currentTheme.primary;
+            document.getElementById('shop-btn').style.boxShadow = `0 5px 0 ${currentTheme.shadow}`;
+            shopPanel.style.border = `4px solid ${currentTheme.primary}`;
+            document.getElementById('shop-title').style.color = currentTheme.primary;
+            document.getElementById('shop-close-x').style.color = currentTheme.secondary;
+            document.getElementById('secret-easter-egg').style.color = currentTheme.eggColor;
+
+            squishyEl.className = `squishy-graphic ${currentTheme.elementClass}`;
+            
+            if (gameMode === 'taba') {
+                toeLayer.innerHTML = `
+                    <div class="toe toe-1"></div>
+                    <div class="toe toe-2"></div>
+                    <div class="toe toe-3"></div>
+                    <div class="toe toe-4"></div>
+                `;
+            } else {
+                toeLayer.innerHTML = ''; 
+            }
+
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('game-interface').style.display = 'flex';
+
+            updateDisplay();
+        }
+
+        function formatNumber(num) {
+            if (num >= 1e12) return num.toExponential(2);
+            return Math.floor(num).toLocaleString();
+        }
+
+        function updateDisplay() {
+            if (score >= 999999999999) {
+                scoreDisplay.textContent = score.toExponential(2);
+            } else {
+                scoreDisplay.textContent = String(Math.floor(score)).padStart(6, '0');
+            }
+            cpsDisplay.textContent = `Auto-Squish: ${formatNumber(clicksPerSecond)} clicks/sec`;
+            renderShop();
+        }
+
+        function doSquish() {
+            score++;
+            updateDisplay();
+            createFloatingText("+1");
+        }
+
+        function createFloatingText(txt) {
+            const text = document.createElement('div');
+            text.className = 'floating-text';
+            text.textContent = txt;
+            text.style.color = themes[gameMode].primary;
+            const randomX = Math.random() * 60 - 30; 
+            text.style.left = `calc(50% + ${randomX}px)`;
+            text.style.top = '20px';
+            container.appendChild(text);
+            setTimeout(() => { text.remove(); }, 600);
+        }
+
+        function toggleShop() {
+            shopPanel.style.display = shopPanel.style.display === 'block' ? 'none' : 'block';
+            if (shopPanel.style.display === 'block') adminPanel.style.display = 'none';
+        }
+
+        function toggleAdmin() {
+            adminPanel.style.display = adminPanel.style.display === 'block' ? 'none' : 'block';
+            if (adminPanel.style.display === 'block') shopPanel.style.display = 'none';
+        }
+
+        function applyCheats() {
+            const newScore = document.getElementById('admin-score-input').value;
+            const newCPS = document.getElementById('admin-cps-input').value;
+            if (newScore !== "") score = parseFloat(newScore);
+            if (newCPS !== "") clicksPerSecond = parseFloat(newCPS);
+            updateDisplay();
+            toggleAdmin();
+        }
+
+        function triggerEasterEgg() {
+            tabaGlasses.style.display = 'block';
+            clicksPerSecond += 500;
+            score += 5000;
+            updateDisplay();
+            createFloatingText("🤓 NERD MODE!");
+        }
+
+        function renderShop() {
+            if (!shopItems.length) return;
+            const currentTheme = themes[gameMode];
+            itemsContainer.innerHTML = "";
+            shopItems.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "shop-item";
+                itemDiv.style.backgroundColor = currentTheme.shopBg;
+                itemDiv.style.borderColor = currentTheme.shopBorder;
+                
+                itemDiv.innerHTML = `
+                    <div class="item-info">
+                        <div style="color: ${currentTheme.secondary}">${item.name}</div>
+                        <span>+${formatNumber(item.cps)} CPS — Cost: ${formatNumber(item.cost)}</span>
+                    </div>
+                    <button class="btn-style" style="background: ${currentTheme.primary}" ${score < item.cost || item.bought ? 'disabled' : ''} onclick="buyItem(${item.id})">
+                        ${item.bought ? 'Owned' : 'Buy'}
+                    </button>
+                `;
+                itemsContainer.appendChild(itemDiv);
+            });
+        }
+
+        function buyItem(id) {
+            const item = shopItems.find(i => i.id === id);
+            if (item && score >= item.cost && !item.bought) {
+                score -= item.cost;
+                clicksPerSecond += item.cps;
+                item.bought = true;
+                updateDisplay();
+            }
+        }
+
+        let lastUpdate = Date.now();
+        setInterval(() => {
+            const now = Date.now();
+            const delta = (now - lastUpdate) / 1000;
+            lastUpdate = now;
+
+            if (clicksPerSecond > 0) {
+                score += clicksPerSecond * delta;
+                if (score >= 999999999999) {
+                    scoreDisplay.textContent = score.toExponential(2);
+                } else {
+                    scoreDisplay.textContent = String(Math.floor(score)).padStart(6, '0');
+                }
+            }
+        }, 50);
+
+        setInterval(() => {
+            const currentTheme = themes[gameMode];
+            if (clicksPerSecond > 0 && shopPanel.style.display !== 'block' && adminPanel.style.display !== 'block') {
+                squishyEl.classList.add(currentTheme.activeClass);
+                setTimeout(() => squishyEl.classList.remove(currentTheme.activeClass), 50);
+            }
+        }, 1000);
+
+        window.addEventListener('keydown', (event) => {
+            if (event.key === 'h' || event.key === 'H') toggleAdmin();
+            if (event.code === 'Space' || event.key === ' ') {
+                if (document.activeElement.tagName !== 'INPUT') {
+                    event.preventDefault();
+                    squishyEl.classList.add(themes[gameMode].activeClass);
+                    doSquish();
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (event) => {
+            if (event.code === 'Space' || event.key === ' ') {
+                squishyEl.classList.remove(themes[gameMode].activeClass);
+            }
+        });
+
+        container.addEventListener('mousedown', () => doSquish());
+    </script>
+</body>
+</html>
